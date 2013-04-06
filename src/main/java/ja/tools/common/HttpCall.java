@@ -1,5 +1,6 @@
 package ja.tools.common;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -74,8 +75,12 @@ public class HttpCall {
 		byte[] data = null;
 		try {
 			in = conn.getInputStream();
-			data = new byte[in.available()];
-			in.read(data);
+			//FIXME Bug
+//			data = new byte[in.available()];
+//			in.read(data);
+			ByteArrayOutputStream out = new ByteArrayOutputStream();
+			JTools.copyStream(in, out);
+			data = out.toByteArray();
 		} finally {
 			if (in != null) {
 				in.close();
