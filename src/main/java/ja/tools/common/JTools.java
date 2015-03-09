@@ -10,7 +10,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.net.InetAddress;
 import java.net.URI;
+import java.util.Scanner;
 
 import javax.imageio.ImageIO;
 
@@ -185,5 +189,59 @@ public class JTools {
 	public static void openBrowser(String url) throws Exception {
 		Desktop desktop = Desktop.getDesktop();
 		desktop.browse(new URI(url));
+	}
+
+	public static String getCpuSerial() {
+		String serial = null;
+		try {
+			Process process = Runtime.getRuntime().exec(
+					new String[] { "wmic", "bios", "get", "serialnumber" });
+			Scanner sc = new Scanner(process.getInputStream());
+			sc.next();
+			String value = sc.next();
+			process.destroy();
+			sc.close();
+
+			serial = value;
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		return serial;
+	}
+
+	@SuppressWarnings("unchecked")
+	public static <T> Class<T> genericParameterClass(Class<?> clazzOwner,
+			int parameterIndex) {
+		Class<T> parameter = null;
+		Type superClass = clazzOwner.getGenericSuperclass();
+		while (!ParameterizedType.class.isInstance(superClass)
+				&& superClass != null) {
+			superClass = (superClass instanceof Class<?>) ? ((Class<?>) superClass)
+					.getGenericSuperclass() : null;
+		}
+
+		if (superClass instanceof ParameterizedType) {
+			ParameterizedType paramType = (ParameterizedType) superClass;
+			Type arguments[] = paramType.getActualTypeArguments();
+
+			if (arguments != null && arguments.length > parameterIndex) {
+				Type type = arguments[parameterIndex];
+
+				if (type instanceof Class) {
+					parameter = (Class<T>) type;
+				}
+			}
+		}
+		return parameter;
+	}
+	
+	public static long ipToLong(InetAddress ip) {
+		byte[] octets = ip.getAddress();
+		long result = 0;
+		for (byte octet : octets) {
+			result <<= 8;
+			result |= octet & 0xff;
+		}
+		return result;
 	}
 }

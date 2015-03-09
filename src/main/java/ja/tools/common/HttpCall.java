@@ -75,9 +75,6 @@ public class HttpCall {
 		byte[] data = null;
 		try {
 			in = conn.getInputStream();
-			//FIXME Bug
-//			data = new byte[in.available()];
-//			in.read(data);
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			JTools.copyStream(in, out);
 			data = out.toByteArray();

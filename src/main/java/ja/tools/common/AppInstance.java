@@ -31,7 +31,7 @@ public class AppInstance extends Thread {
 
 	public static void checkOrExit() {
 		try {
-			log.info("Check if notalrecall is already running.");
+			log.info("Check if app is already running.");
 			new Socket(InetAddress.getLocalHost().getHostAddress(),
 					CHECKER_PORT);
 			log.info("Exiting. Instance is already running");
