@@ -1,8 +1,11 @@
 package ja.tools.common;
 
 import java.awt.Desktop;
+import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
+import java.awt.image.ColorConvertOp;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -14,6 +17,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.InetAddress;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.Scanner;
 
 import javax.imageio.ImageIO;
@@ -29,13 +33,11 @@ public class JTools {
 
 	public static String MD5(String md5) {
 		try {
-			java.security.MessageDigest md = java.security.MessageDigest
-					.getInstance("MD5");
+			java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
 			byte[] array = md.digest(md5.getBytes());
 			StringBuffer sb = new StringBuffer();
 			for (int i = 0; i < array.length; ++i) {
-				sb.append(Integer.toHexString((array[i] & 0xFF) | 0x100)
-						.substring(1, 3));
+				sb.append(Integer.toHexString((array[i] & 0xFF) | 0x100).substring(1, 3));
 			}
 			return sb.toString();
 		} catch (java.security.NoSuchAlgorithmException e) {
@@ -60,8 +62,7 @@ public class JTools {
 		return getResourceFromClasspath(JTools.class, path);
 	}
 
-	public static void copyStream(InputStream in, OutputStream os)
-			throws IOException {
+	public static void copyStream(InputStream in, OutputStream os) throws IOException {
 		int read = 0;
 		byte[] buff = new byte[1024];
 		while ((read = in.read(buff, 0, buff.length)) > 0) {
@@ -79,6 +80,19 @@ public class JTools {
 			sb.append(Integer.toHexString(intVal));
 		}
 		return sb.toString();
+	}
+
+	public static void imageToGrayScale(InputStream in, Path output) throws IOException {
+		BufferedImage grayImg = imageToGrayScale(in);
+		ImageIO.write(grayImg, "png", output.toFile());
+	}
+
+	public static BufferedImage imageToGrayScale(InputStream in) throws IOException {
+		BufferedImage img = ImageIO.read(in);
+		ColorSpace cs = ColorSpace.getInstance(ColorSpace.CS_GRAY);
+		ColorConvertOp op = new ColorConvertOp(cs, null);
+		BufferedImage grayImg = op.filter(img, null);
+		return grayImg;
 	}
 
 	public static Image resizeImage(byte[] data, int size) {
@@ -99,12 +113,7 @@ public class JTools {
 		return null;
 	}
 
-	public static Image resizeImage(BufferedImage img, int size,
-			boolean higherQuality) {
-		// int type = (img.getTransparency() == Transparency.OPAQUE) ?
-		// BufferedImage.TYPE_INT_RGB
-		// : BufferedImage.TYPE_INT_ARGB;
-		BufferedImage ret = (BufferedImage) img;
+	public static Image resizeImage(BufferedImage img, int size, boolean higherQuality) {
 		int w = img.getWidth();
 		int h = img.getHeight();
 
@@ -119,35 +128,7 @@ public class JTools {
 			w = targetWidth;
 			h = targetHeight;
 		}
-		return ret.getScaledInstance(targetWidth, targetHeight,
-				Image.SCALE_SMOOTH);
-		// do {
-		// if (higherQuality) {
-		// if (w > targetWidth) {
-		// w /= 2;
-		// if (w < targetWidth) {
-		// w = targetWidth;
-		// }
-		// }
-		// if (h > targetHeight) {
-		// h /= 2;
-		// if (h < targetHeight) {
-		// h = targetHeight;
-		// }
-		// }
-		// }
-		//
-		// BufferedImage tmp = new BufferedImage(w, h, type);
-		// Graphics2D g2 = tmp.createGraphics();
-		// g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
-		// RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-		// g2.drawImage(ret, 0, 0, w, h, null);
-		// g2.dispose();
-		//
-		// ret = tmp;
-		// } while (w != targetWidth || h != targetHeight);
-		//
-		// return ret;
+		return img.getScaledInstance(targetWidth, targetHeight, Image.SCALE_SMOOTH);
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -170,15 +151,12 @@ public class JTools {
 						return;
 					}
 
-					Class[] classArgs = new Class[] { String.class,
-							String.class };
+					Class[] classArgs = new Class[] { String.class, String.class };
 
-					Method privateMethod = dClass.getDeclaredMethod(
-							"ShellExecute", classArgs);
+					Method privateMethod = dClass.getDeclaredMethod("ShellExecute", classArgs);
 
 					privateMethod.setAccessible(true);
-					Object[] invokeArgs = new Object[] {
-							file.getCanonicalPath(), "open" };
+					Object[] invokeArgs = new Object[] { file.getCanonicalPath(), "open" };
 					privateMethod.invoke(null, invokeArgs);
 				} catch (Throwable t) {
 				}
@@ -194,8 +172,7 @@ public class JTools {
 	public static String getCpuSerial() {
 		String serial = null;
 		try {
-			Process process = Runtime.getRuntime().exec(
-					new String[] { "wmic", "bios", "get", "serialnumber" });
+			Process process = Runtime.getRuntime().exec(new String[] { "wmic", "bios", "get", "serialnumber" });
 			Scanner sc = new Scanner(process.getInputStream());
 			sc.next();
 			String value = sc.next();
@@ -210,14 +187,11 @@ public class JTools {
 	}
 
 	@SuppressWarnings("unchecked")
-	public static <T> Class<T> genericParameterClass(Class<?> clazzOwner,
-			int parameterIndex) {
+	public static <T> Class<T> genericParameterClass(Class<?> clazzOwner, int parameterIndex) {
 		Class<T> parameter = null;
 		Type superClass = clazzOwner.getGenericSuperclass();
-		while (!ParameterizedType.class.isInstance(superClass)
-				&& superClass != null) {
-			superClass = (superClass instanceof Class<?>) ? ((Class<?>) superClass)
-					.getGenericSuperclass() : null;
+		while (!ParameterizedType.class.isInstance(superClass) && superClass != null) {
+			superClass = (superClass instanceof Class<?>) ? ((Class<?>) superClass).getGenericSuperclass() : null;
 		}
 
 		if (superClass instanceof ParameterizedType) {
@@ -234,7 +208,7 @@ public class JTools {
 		}
 		return parameter;
 	}
-	
+
 	public static long ipToLong(InetAddress ip) {
 		byte[] octets = ip.getAddress();
 		long result = 0;
@@ -243,5 +217,16 @@ public class JTools {
 			result |= octet & 0xff;
 		}
 		return result;
+	}
+
+	public static BufferedImage toBufferedImage(Image image) {
+		BufferedImage newImage = null;
+		if (!(image instanceof BufferedImage)) {
+			newImage = new BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+			Graphics2D g = newImage.createGraphics();
+			g.drawImage(image, 0, 0, null);
+			g.dispose();
+		}
+		return newImage;
 	}
 }
